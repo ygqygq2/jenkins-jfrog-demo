@@ -26,7 +26,7 @@ pipeline {
       description: '部署分支/tag', listSize: '10', name: 'DEPLOY_BRANCH',
       quickFilterEnabled: true, selectedValue: 'DEFAULT',
       sortMode: 'NONE', tagFilter: '*', type: 'PT_BRANCH_TAG',
-      remoteURL: 'git@github.com:jfrog/jenkins-jfrog-plugin.git'
+      remoteURL: 'git@github.com:jenkins-docs/simple-java-maven-app.git'
     string(defaultValue: '/tmp', description: '部署的目录',
       name: 'DEPLOY_DIR', trim: true)
     string(defaultValue: 'git@github.com:jenkins-docs/simple-java-maven-app.git', description: '部署的 git 仓库地址',
