@@ -11,7 +11,9 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
-  agent none
+  agent {
+    label "master"
+  }
 
   environment {
     // 全局环境变量
@@ -39,7 +41,7 @@ pipeline {
           env.ENV_TAG = env.JOB_NAME.split('_')[0];
           env.PRODUCT_NAME = env.JOB_NAME.split('_')[1];
           env.PACKAGE_NAME = "${env.APP_NAME}-${env.DEPLOY_BRANCH}-${env.BUILD_NUMBER}.tar.gz"
-          env.REPO_PATH = "generic-local/${env.PRODUCT_NAME}/${env.APP_NAME}/"
+          env.REPO_PATH = "generic-local/${env.PRODUCT_NAME}/${env.APP_NAME}"
         }
       }
     }
@@ -79,17 +81,26 @@ pipeline {
           cp -f conf/settings.xml /usr/share/maven/conf/settings.xml
           cd code
           mvn -B install --file pom.xml
-          tar -zcvf ${PACKAGE_NAME} target/*.jar
-          jf rt upload ${PACKAGE_NAME} ${REPO_PATH}
-          jf rt build-publish
-          sleep 600
+          cd target
+          # chown 1000:1000 ./*.jar
+          tar -zcvf ../../${PACKAGE_NAME} ./*.jar
+          # chown 1000:1000 ../../${PACKAGE_NAME}
         '''
+          jf "rt upload ${PACKAGE_NAME} ${REPO_PATH}"
+          jf "rt build-publish"
       }
     }
 
     stage('部署') {
+      agent {
+        label "master"
+      }
+      tools {
+        jfrog 'jfrog-cli'
+      }
       steps {
         echo '################### Deploy ###################'
+        jf "rt download ${REPO_PATH}/${PACKAGE_NAME}"
         script {
           serverList.each { ip, sshuser ->
             echo "#### 部署到 $ip ####"
@@ -102,7 +113,7 @@ pipeline {
             withCredentials([sshUserPrivateKey(credentialsId: env.SERVER_SSHKEY_ID, usernameVariable: 'userName')]) {
               // remote.user = userName
               sshPut remote: remote, from: '${REPO_PATH}/${PACKAGE_NAME}', into: '/tmp/'
-              sshCommand remote: remote, command: "tar -zxvf ${REPO_PATH}/${PACKAGE_NAME} -C ${DEPLOY_DIR}"
+              sshCommand remote: remote, command: "tar -zxvf /tmp/${PACKAGE_NAME} -C ${DEPLOY_DIR}"
 
               // sshCommand remote: remote, command:
               //     "sed -i 's@dev/${env.APP_NAME}:\\(.*\\)@dev/${env.APP_NAME}:${env.NEW_TAG}@' /data/docker/docker-compose.yml"
