@@ -13,6 +13,6 @@ COPY conf/settings.xml /usr/share/maven/conf/settings.xml
 
 # ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/lib:/data/lib
 # 注意生成的 jar 包名
-# COPY --from=builder /usr/src/mymaven/target/eureka-server-*.jar /app.jar
+# COPY --from=builder /usr/src/mymaven/target/my-app*.jar /app.jar
 # 
 # CMD ["java", "-Duser.timezone=GMT+08", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app.jar"]

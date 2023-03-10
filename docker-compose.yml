@@ -14,6 +14,7 @@ services:
       - JENKINS_ARGS="--sessionTimeout=86400"
     volumes:
       - ./jenkins/data:/var/jenkins_home
+      - ./jenkins/caches:/caches
       # 要支持升级持久化，先启动，把 /usr/share/jenkins 目录拷出来
       # 再取消下面一行注释，即保持运行所需要文件原样，升级时替换目录内 war 文件即可
       # - ./jenkins/war:/usr/share/jenkins

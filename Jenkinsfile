@@ -29,7 +29,7 @@ pipeline {
       remoteURL: 'git@github.com:jfrog/jenkins-jfrog-plugin.git'
     string(defaultValue: '/tmp', description: '部署的目录',
       name: 'DEPLOY_DIR', trim: true)
-    string(defaultValue: 'git@github.com:jfrog/jenkins-jfrog-plugin.git', description: '部署的 git 仓库地址',
+    string(defaultValue: 'git@github.com:jenkins-docs/simple-java-maven-app.git', description: '部署的 git 仓库地址',
       name: 'DEPLOY_GIT_URL', trim: true)
   }
 
@@ -59,14 +59,26 @@ pipeline {
     }
 
     stage('打包') {
-      agent { dockerfile true }
+      agent {
+        docker {
+          image 'maven:3.9.0-eclipse-temurin-8-alpine'
+          args "-v /caches/maven:/root/.m2 -u root:root"
+        }
+        // dockerfile {
+        //   dir 'code'
+        //   additionalBuildArgs  '--build-arg version=1.0.2'
+        // }
+      }
       tools {
         jfrog 'jfrog-cli'
       }
       steps {
         echo '################### Package and Push ###################'
         sh '''#!/bin/sh -e
-          pwd && ls /usr/src/mymaven
+          cp -f conf/settings.xml /usr/share/maven/conf/settings.xml
+          cd code
+          mvn -B install --file pom.xml
+          tar -zcvf ${PACKAGE_NAME} target/*.jar
           jf rt upload ${PACKAGE_NAME} ${REPO_PATH}
           jf rt build-publish
           sleep 600
