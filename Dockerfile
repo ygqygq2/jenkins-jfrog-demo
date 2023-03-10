@@ -5,7 +5,7 @@ WORKDIR /usr/src/mymaven
 COPY . .
 COPY conf/settings.xml /usr/share/maven/conf/settings.xml
 
-RUN mvn -B install --file pom.xml
+# RUN mvn -B install --file pom.xml
 
 # FROM openjdk:8-jdk-alpine
 

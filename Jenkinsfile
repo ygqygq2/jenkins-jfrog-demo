@@ -49,15 +49,12 @@ pipeline {
     stage('下载代码') {
       steps {
         echo '################### Clone ###################'
+        dir("code") {
           checkout scmGit(
             branches: [[name: "${env.DEPLOY_BRANCH}"]],
             userRemoteConfigs: [[url: "${env.DEPLOY_GIT_URL}", credentialsId: "${env.GIT_SSHKEY_ID}"]]
           )
-
-        // checkout scm
-        // script {
-        //   env.DEPLOY_GIT_URL = sh(returnStdout: true, script: 'git config remote.origin.url').trim()
-        // }
+        }
       }
     }
 
