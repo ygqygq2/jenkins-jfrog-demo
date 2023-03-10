@@ -11,9 +11,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '20'))
   }
 
-  agent {
-    label "master"
-  }
+  agent none
 
   environment {
     // 全局环境变量
@@ -47,6 +45,9 @@ pipeline {
     }
 
     stage('下载代码') {
+      agent {
+        label "master"
+      }
       steps {
         echo '################### Clone ###################'
         dir("code") {
@@ -61,7 +62,7 @@ pipeline {
     stage('打包') {
       agent {
         docker {
-          image 'maven:3.9.0-eclipse-temurin-8-alpine'
+          image 'maven:3.9.0-eclipse-temurin-11'
           args "-v /caches/maven:/root/.m2 -u root:root"
         }
         // dockerfile {
