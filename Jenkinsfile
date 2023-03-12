@@ -56,8 +56,14 @@ pipeline {
           env.APP_NAME = env.JOB_NAME.split('_')[-1];
           env.ENV_TAG = env.JOB_NAME.split('_')[0];
           env.PRODUCT_NAME = env.JOB_NAME.split('_')[1];
-          env.PACKAGE_NAME = "${env.APP_NAME}-${env.DEPLOY_BRANCH}-${env.BUILD_NUMBER}.tar.gz"
-          env.REPO_PATH = "generic-local/${env.PRODUCT_NAME}/${env.APP_NAME}"
+          if (env.DEPLOY_TYPE == 'file') {
+            env.REPO_PATH = "generic-local/${env.PRODUCT_NAME}/${env.APP_NAME}"
+            env.PACKAGE_NAME = "${env.APP_NAME}-${env.DEPLOY_BRANCH}-${env.BUILD_NUMBER}.tar.gz"
+          } else if (env.DEPLOY_TYPE == 'docker') {
+            env.REPO_PATH = "${env.DOCKER_REP}/${env.PRODUCT_NAME}/${env.APP_NAME}"
+            env.TMP_TAG = sh(script: '#!/bin/sh -e\n echo "${env.DEPLOY_BRANCH}"|sed "s/[^[:alnum:]._-]/-/g"',
+              returnStdout: true).trim()
+          }
         }
       }
     }
@@ -121,7 +127,7 @@ pipeline {
             env.NEW_TAG=env.TMP_TAG + "_" + INCREASE
           }
 
-          echo "Docker image is [ ${env.DOCKER_URL}/${env.REP}/${env.APP_NAME}:${env.NEW_TAG} ]!"
+          echo "Docker image is [ ${env.DOCKER_URL}/${env.REPO_PATH}/${env.APP_NAME}:${env.NEW_TAG} ]!"
           echo "Image tag is ${env.NEW_TAG}!"
           echo '################### 获取 Tag 完成 ###################'
         }
@@ -139,11 +145,6 @@ pipeline {
             branches: [[name: "${env.DEPLOY_BRANCH}"]],
             userRemoteConfigs: [[url: "${env.DEPLOY_GIT_URL}", credentialsId: "${env.GIT_SSHKEY_ID}"]]
           )
-          script {
-            // 因为分支/ TAG 内可能含特殊字符，所以先下载代码从 git 中获取
-            env.TMP_TAG = sh(script: '#!/bin/sh -e\n echo "${env.DEPLOY_BRANCH}"|sed "s/[^[:alnum:]._-]/-/g"',
-              returnStdout: true).trim()
-          }
         }
       }
     }
@@ -195,11 +196,11 @@ pipeline {
             if [ ! -f "Dockerfile" ]; then
               cp ../Dockerfile .
             fi
-            docker build -t ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG} .
-            docker push ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG}
+            docker build -t ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} .
+            docker push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG}
           """
         }
-        jf "rt docker-push ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
+        jf "rt docker-push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
         jf "rt build-publish ${BUILD_NAME} ${BUILD_NUMBER}"
       }
     }
