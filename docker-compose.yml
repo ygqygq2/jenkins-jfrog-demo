@@ -1,4 +1,4 @@
-version: '3.1'
+version: "3.1"
 networks:
   app:
 
@@ -6,6 +6,7 @@ services:
   jenkins:
     image: jenkinsci/blueocean:1.25.7
     restart: always
+    user: root
     networks:
       - app
     environment:
