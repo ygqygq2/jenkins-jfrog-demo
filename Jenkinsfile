@@ -54,8 +54,9 @@ pipeline {
             sh "exit 1"
           }
           env.APP_NAME = env.JOB_NAME.split('_')[-1].toLowerCase();
-          env.ENV_TAG = env.JOB_NAME.split('_')[0];
-          env.PRODUCT_NAME = env.JOB_NAME.split('_')[1];
+          env.ENV_TAG = env.JOB_NAME.split('_')[0].toLowerCase();
+          env.PRODUCT_NAME = env.JOB_NAME.split('_')[1].toLowerCase();
+
           if (env.DEPLOY_TYPE == 'file') {
             env.REPO_PATH = "generic-local/${env.PRODUCT_NAME}/${env.APP_NAME}"
             env.PACKAGE_NAME = "${env.APP_NAME}-${env.DEPLOY_BRANCH}-${env.BUILD_NUMBER}.tar.gz"
@@ -253,7 +254,11 @@ pipeline {
   post {
     always {
       script{
-        currentBuild.description = "Deploy: ${env.DEPLOY_BRANCH}"
+        if (env.DEPLOY_TYPE == 'file') {
+          currentBuild.description = "Deploy: ${env.REPO_PATH}/${env.PACKAGE_NAME}"
+        } else if (env.DEPLOY_TYPE == 'docker') {
+          currentBuild.description = "Deploy: ${env.REPO_PATH}:${env.NEW_TAG}"
+        }
       }
     }
   }
