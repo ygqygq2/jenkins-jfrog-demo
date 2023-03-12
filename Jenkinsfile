@@ -50,7 +50,7 @@ pipeline {
       steps {
         script {
           if (env.DEPLOY_BRANCH == '') {
-            cho "必须选择分支或 TAG"
+            echo "必须选择分支或 TAG"
             currentBuild.result = 'ABORTED'
             sh "exit 1"
           }
