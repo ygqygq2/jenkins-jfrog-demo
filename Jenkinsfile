@@ -1,5 +1,4 @@
 import jenkins.model.*
-import groovy.json.JsonSlurper
 
 // 定义部署的 ssh server 的跳转 IP 和用户
 def serverList= ["10.111.3.56": "root"]
@@ -96,23 +95,27 @@ pipeline {
           def n = 30
           def allTags = []
           def LATEST_TAG = ''
-          def JSON = sh(script: '#!/bin/sh -e\n curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} ' +
-            '-X GET --header "Accept: application/json" ' +
-            '"${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}"',
-            returnStdout: true).trim()
-          def slurper = new groovy.json.JsonSlurper()
-          def jsonData = slurper.parseText(JSON)
-          tmpTags = jsonData.tags
+          def jsonFile = 'tags.json'
+          sh '''#!/bin/sh -e
+            curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} \
+            -X GET --header "Accept: application/json" \
+            "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
+            2>&1 > ${jsonFile}
+          '''
+          def JSON = readJSON file: jsonFile, returnPojo: true
+          tmpTags = JSON.tags
           if(tmpTags) {
-            allTags += jsonData.tags
-            while (tmpTags.size() == n) {
+            allTags += tmpTags
+            while (tmpTags.size() >= n) {
               page += n
-              JSON = sh(script: '#!/bin/sh -e\n curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} ' +
-                '-X GET --header "Accept: application/json" ' +
-                '"${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}"',
-                returnStdout: true).trim()
-              jsonData = slurper.parseText(JSON)
-              tmpTags = jsonData.tags
+              sh '''#!/bin/sh -e
+                curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} \
+                -X GET --header "Accept: application/json" \
+                "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
+                  2>&1 > ${jsonFile}
+              '''
+              JSON = readJSON file: jsonFile, returnPojo: true
+              tmpTags = JSON.tags
               allTags += tmpTags
             }
             def compareTags = allTags.sort().reverse().unique()
@@ -161,9 +164,8 @@ pipeline {
       steps {
         echo '################### Package and Push ###################'
         sh '''#!/bin/sh -e
-          cp -f conf/settings.xml /usr/share/maven/conf/settings.xml
           cd code
-          mvn -B install --file pom.xml
+          mvn -B install -f pom.xml -s ../conf/settings.xml -DskipTests
           cd target
           # chown 1000:1000 ./*.jar
           tar -zcvf ../../${PACKAGE_NAME} ./*.jar
