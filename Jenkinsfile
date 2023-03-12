@@ -53,7 +53,7 @@ pipeline {
             currentBuild.result = 'ABORTED'
             sh "exit 1"
           }
-          env.APP_NAME = env.JOB_NAME.split('_')[-1];
+          env.APP_NAME = env.JOB_NAME.split('_')[-1].toLowerCase();
           env.ENV_TAG = env.JOB_NAME.split('_')[0];
           env.PRODUCT_NAME = env.JOB_NAME.split('_')[1];
           if (env.DEPLOY_TYPE == 'file') {
@@ -61,6 +61,8 @@ pipeline {
             env.PACKAGE_NAME = "${env.APP_NAME}-${env.DEPLOY_BRANCH}-${env.BUILD_NUMBER}.tar.gz"
           } else if (env.DEPLOY_TYPE == 'docker') {
             env.REPO_PATH = "${env.DOCKER_REP}/${env.PRODUCT_NAME}/${env.APP_NAME}".toLowerCase()
+            // 避免后面错误
+            env.PACKAGE_NAME = ''
             env.TMP_TAG = sh(script: '#!/bin/sh -e\n echo "${DEPLOY_BRANCH}"|sed "s/[^[:alnum:]._-]/-/g"',
               returnStdout: true).trim()
           } else {
@@ -218,7 +220,9 @@ pipeline {
       }
       steps {
         echo '################### Deploy ###################'
-        jf "rt download ${REPO_PATH}/${PACKAGE_NAME}"
+        if (env.DEPLOY_TYPE == 'file') {
+          jf "rt download ${REPO_PATH}/${PACKAGE_NAME}"
+        }
         script {
           serverList.each { ip, sshuser ->
             echo "#### 部署到 $ip ####"
@@ -228,7 +232,9 @@ pipeline {
             remote.host = ip
             remote.allowAnyHosts = true
 
-            withCredentials([sshUserPrivateKey(credentialsId: env.SERVER_SSHKEY_ID, keyFileVariable: 'identity', passphraseVariable: '', usernameVariable: 'userName')]) {
+            withCredentials([sshUserPrivateKey(credentialsId: env.SERVER_SSHKEY_ID, keyFileVariable: 'identity',
+              passphraseVariable: '', usernameVariable: 'userName')]) {
+              remote.identityFile = identity
               if (env.DEPLOY_TYPE == 'file') {
                 sshPut remote: remote, from: "${env.PACKAGE_NAME}", into: '/tmp/'
                 sshCommand remote: remote, command: "tar -zxvf /tmp/${PACKAGE_NAME} -C ${DEPLOY_DIR}"
