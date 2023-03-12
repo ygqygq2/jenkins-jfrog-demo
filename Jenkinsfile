@@ -100,7 +100,7 @@ pipeline {
             curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} \
             -X GET --header "Accept: application/json" \
             "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
-            2>&1 > ${jsonFile}
+            2>&1 > "${jsonFile}"
           '''
           def JSON = readJSON file: jsonFile, returnPojo: true
           tmpTags = JSON.tags
@@ -108,12 +108,12 @@ pipeline {
             allTags += tmpTags
             while (tmpTags.size() >= n) {
               page += n
-              sh '''#!/bin/sh -e
+              sh """#!/bin/sh -e
                 curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} \
                 -X GET --header "Accept: application/json" \
                 "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
-                  2>&1 > ${jsonFile}
-              '''
+                2>&1 > "${jsonFile}"
+              """
               JSON = readJSON file: jsonFile, returnPojo: true
               tmpTags = JSON.tags
               allTags += tmpTags
@@ -136,7 +136,7 @@ pipeline {
               LATEST_TAG=$LATEST_TAG; echo \${LATEST_TAG##*_}|awk '{print int(\$1)}' """,
               returnStdout: true).trim()
             INCREASE=Integer.parseInt(CURRENT_INCREASE) + 1
-            INCREASE=sh(script: """#!/bin/sh -e\n 
+            INCREASE=sh(script: """#!/bin/sh -e\n
               INCREASE=$INCREASE; printf "%.3d" \$INCREASE """, returnStdout: true).trim()
             env.NEW_TAG=env.TMP_TAG + "_" + INCREASE
           }
@@ -163,14 +163,14 @@ pipeline {
       }
       steps {
         echo '################### Package and Push ###################'
-        sh '''#!/bin/sh -e
+        sh """#!/bin/sh -e
           cd code
           mvn -B install -f pom.xml -s ../conf/settings.xml -DskipTests
           cd target
           # chown 1000:1000 ./*.jar
           tar -zcvf ../../${PACKAGE_NAME} ./*.jar
           # chown 1000:1000 ../../${PACKAGE_NAME}
-        '''
+        """
         jf "rt upload ${PACKAGE_NAME} ${REPO_PATH}"
         jf "rt build-publish"
       }
@@ -189,7 +189,7 @@ pipeline {
       steps {
         echo '################### Package and Push ###################'
         dir("code") {
-          sh '''#!/bin/sh -e
+          sh """#!/bin/sh -e
             echo ${DOCKER_CRE_PSW} | docker login -u ${DOCKER_CRE_USR} --password-stdin ${DOCKER_URL}
 
             if [ ! -f "Dockerfile" ]; then
@@ -197,7 +197,7 @@ pipeline {
             fi
             docker build -t ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG} .
             docker push ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG}
-          '''
+          """
         }
         jf "rt docker-push ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
         jf "rt build-publish ${BUILD_NAME} ${BUILD_NUMBER}"
