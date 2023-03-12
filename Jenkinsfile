@@ -194,8 +194,8 @@ pipeline {
       steps {
         echo '################### Package and Push ###################'
         dir("code") {
-          sh """#!/bin/sh -e
-            echo '${DOCKER_CRE_PSW}' | docker login -u ${DOCKER_CRE_USR} --password-stdin ${DOCKER_URL}
+          sh '''#!/bin/sh -e
+            echo "${DOCKER_CRE_PSW}" | docker login -u ${DOCKER_CRE_USR} --password-stdin ${DOCKER_URL}
 
             if [ ! -f "Dockerfile" ]; then
               cp ../Dockerfile .
@@ -203,7 +203,7 @@ pipeline {
             fi
             docker build -t ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} .
             docker push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG}
-          """
+          '''
         }
         jf "rt docker-push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
         jf "rt build-publish ${BUILD_NAME} ${BUILD_NUMBER}"
