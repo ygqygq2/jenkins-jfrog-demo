@@ -60,7 +60,7 @@ pipeline {
             env.REPO_PATH = "generic-local/${env.PRODUCT_NAME}/${env.APP_NAME}"
             env.PACKAGE_NAME = "${env.APP_NAME}-${env.DEPLOY_BRANCH}-${env.BUILD_NUMBER}.tar.gz"
           } else if (env.DEPLOY_TYPE == 'docker') {
-            env.REPO_PATH = "${env.DOCKER_REP}/${env.PRODUCT_NAME}/${env.APP_NAME}"
+            env.REPO_PATH = "${env.DOCKER_REP}/${env.PRODUCT_NAME}/${env.APP_NAME}".toLowerCase()
             env.TMP_TAG = sh(script: '#!/bin/sh -e\n echo "${DEPLOY_BRANCH,,}"|sed "s/[^[:alnum:]._-]/-/g"',
               returnStdout: true).trim()
           }
@@ -196,11 +196,11 @@ pipeline {
             if [ ! -f "Dockerfile" ]; then
               cp ../Dockerfile .
             fi
-            docker build -t ${DOCKER_URL}/${REPO_PATH,,}/${APP_NAME,,}:${NEW_TAG} .
-            docker push ${DOCKER_URL}/${REPO_PATH,,}/${APP_NAME,,}:${NEW_TAG}
+            docker build -t ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} .
+            docker push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG}
           """
         }
-        jf "rt docker-push ${DOCKER_URL}/${REPO_PATH,,}/${APP_NAME,,}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
+        jf "rt docker-push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
         jf "rt build-publish ${BUILD_NAME} ${BUILD_NUMBER}"
       }
     }
