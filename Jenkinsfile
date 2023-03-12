@@ -80,7 +80,7 @@ pipeline {
         script {
           echo '################### 获取 Tag 开始 ###################'
           // 初始页
-          def page = 0
+          env.page = 0
           // 一次查询的数量
           def n = 30
           def allTags = []
@@ -97,7 +97,7 @@ pipeline {
           if(tmpTags) {
             allTags += tmpTags
             while (tmpTags.size() >= n) {
-              page += n
+              env.page += n
               sh '''
                 curl -s --connect-timeout 60 -u "${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}" \
                 -X GET --header "Accept: application/json" \
@@ -131,7 +131,7 @@ pipeline {
             env.NEW_TAG=env.TMP_TAG + "_" + INCREASE
           }
 
-          echo "Docker image is [ ${env.DOCKER_URL}/${env.REPO_PATH}/${env.APP_NAME}:${env.NEW_TAG} ]!"
+          echo "Docker image is [ ${env.DOCKER_URL}/${env.REPO_PATH}:${env.NEW_TAG} ]!"
           echo "Image tag is ${env.NEW_TAG}!"
           echo '################### 获取 Tag 完成 ###################'
         }
@@ -201,11 +201,11 @@ pipeline {
               cp ../Dockerfile .
               cp -r ../conf .
             fi
-            docker build -t ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} .
-            docker push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG}
+            docker build -t ${DOCKER_URL}/${REPO_PATH}:${NEW_TAG} .
+            docker push ${DOCKER_URL}/${REPO_PATH}:${NEW_TAG}
           '''
         }
-        jf "rt docker-push ${DOCKER_URL}/${REPO_PATH}/${APP_NAME}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
+        jf "rt docker-push ${DOCKER_URL}/${REPO_PATH}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
         jf "rt build-publish ${BUILD_NAME} ${BUILD_NUMBER}"
       }
     }
