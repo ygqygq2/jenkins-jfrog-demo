@@ -27,7 +27,7 @@ pipeline {
     // docker virtual repository is "dev"
     DOCKER_REP = 'docker-local'
     // jfrog container registry
-    DOCKER_URL = 'https://reg.k8snb.com'
+    DOCKER_URL = 'reg.k8snb.com'
   }
 
   parameters {
@@ -62,26 +62,6 @@ pipeline {
       }
     }
 
-    stage('下载代码') {
-      agent {
-        label "master"
-      }
-      steps {
-        echo '################### Clone ###################'
-        dir("code") {
-          checkout scmGit(
-            branches: [[name: "${env.DEPLOY_BRANCH}"]],
-            userRemoteConfigs: [[url: "${env.DEPLOY_GIT_URL}", credentialsId: "${env.GIT_SSHKEY_ID}"]]
-          )
-          script {
-            // 因为分支/ TAG 内可能含特殊字符，所以先下载代码从 git 中获取
-            env.TMP_TAG = sh(script: '#!/bin/sh -e\n git rev-parse --abbrev-ref HEAD|sed "s/[^[:alnum:]._-]/-/g"',
-              returnStdout: true).trim()
-          }
-        }
-      }
-    }
-
     stage('获取容器 TAG') {
       when {
         environment name: 'DEPLOY_TYPE', value: 'docker'
@@ -95,25 +75,25 @@ pipeline {
           def n = 30
           def allTags = []
           def LATEST_TAG = ''
-          def jsonFile = 'tags.json'
-          sh """#!/bin/sh -e
-            curl -s --connect-timeout 60 -u '${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}' \
+          def env.jsonFile = 'tags.json'
+          sh '''
+            curl -s --connect-timeout 60 -u "${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}" \
             -X GET --header "Accept: application/json" \
-            "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
+            "https://${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
             2>&1 > "${jsonFile}"
-          """
+          '''
           def JSON = readJSON file: jsonFile, returnPojo: true
           tmpTags = JSON.tags
           if(tmpTags) {
             allTags += tmpTags
             while (tmpTags.size() >= n) {
               page += n
-              sh """#!/bin/sh -e
-                curl -s --connect-timeout 60 -u '${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}' \
+              sh '''
+                curl -s --connect-timeout 60 -u "${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}" \
                 -X GET --header "Accept: application/json" \
-                "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
+                "https://${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
                 2>&1 > "${jsonFile}"
-              """
+              '''
               JSON = readJSON file: jsonFile, returnPojo: true
               tmpTags = JSON.tags
               allTags += tmpTags
@@ -144,6 +124,26 @@ pipeline {
           echo "Docker image is [ ${env.DOCKER_URL}/${env.REP}/${env.APP_NAME}:${env.NEW_TAG} ]!"
           echo "Image tag is ${env.NEW_TAG}!"
           echo '################### 获取 Tag 完成 ###################'
+        }
+      }
+    }
+
+    stage('下载代码') {
+      agent {
+        label "master"
+      }
+      steps {
+        echo '################### Clone ###################'
+        dir("code") {
+          checkout scmGit(
+            branches: [[name: "${env.DEPLOY_BRANCH}"]],
+            userRemoteConfigs: [[url: "${env.DEPLOY_GIT_URL}", credentialsId: "${env.GIT_SSHKEY_ID}"]]
+          )
+          script {
+            // 因为分支/ TAG 内可能含特殊字符，所以先下载代码从 git 中获取
+            env.TMP_TAG = sh(script: '#!/bin/sh -e\n echo "${env.DEPLOY_BRANCH}"|sed "s/[^[:alnum:]._-]/-/g"',
+              returnStdout: true).trim()
+          }
         }
       }
     }
