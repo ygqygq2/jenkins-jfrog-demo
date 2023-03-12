@@ -96,9 +96,9 @@ pipeline {
           def n = 30
           def allTags = []
           def LATEST_TAG = ''
-          def JSON = sh(script: "#!/bin/sh -e\n curl -s --connect-timeout 60 -u '${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}' " + 
-            "-X GET --header 'Accept: application/json' " + 
-            "'${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}'", 
+          def JSON = sh(script: '#!/bin/sh -e\n curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} ' +
+            '-X GET --header "Accept: application/json" ' +
+            '"${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}"',
             returnStdout: true).trim()
           def slurper = new groovy.json.JsonSlurper()
           def jsonData = slurper.parseText(JSON)
@@ -107,9 +107,9 @@ pipeline {
             allTags += jsonData.tags
             while (tmpTags.size() == n) {
               page += n
-              JSON = sh(script: "#!/bin/sh -e\n curl -s --connect-timeout 60 -u '${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}' " + 
-                "-X GET --header 'Accept: application/json' " + 
-                "'${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}'", 
+              JSON = sh(script: '#!/bin/sh -e\n curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} ' +
+                '-X GET --header "Accept: application/json" ' +
+                '"${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}"',
                 returnStdout: true).trim()
               jsonData = slurper.parseText(JSON)
               tmpTags = jsonData.tags
