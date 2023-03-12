@@ -96,12 +96,12 @@ pipeline {
           def allTags = []
           def LATEST_TAG = ''
           def jsonFile = 'tags.json'
-          sh '''#!/bin/sh -e
-            curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} \
+          sh """#!/bin/sh -e
+            curl -s --connect-timeout 60 -u '${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}' \
             -X GET --header "Accept: application/json" \
             "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
             2>&1 > "${jsonFile}"
-          '''
+          """
           def JSON = readJSON file: jsonFile, returnPojo: true
           tmpTags = JSON.tags
           if(tmpTags) {
@@ -109,7 +109,7 @@ pipeline {
             while (tmpTags.size() >= n) {
               page += n
               sh """#!/bin/sh -e
-                curl -s --connect-timeout 60 -u ${DOCKER_CRE_USR}:${DOCKER_CRE_PSW} \
+                curl -s --connect-timeout 60 -u '${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}' \
                 -X GET --header "Accept: application/json" \
                 "${DOCKER_URL}/artifactory/api/docker/${DOCKER_REP}/v2/${PRODUCT_NAME}/${APP_NAME}/tags/list?n=30&last=${page}" \
                 2>&1 > "${jsonFile}"
@@ -190,7 +190,7 @@ pipeline {
         echo '################### Package and Push ###################'
         dir("code") {
           sh """#!/bin/sh -e
-            echo ${DOCKER_CRE_PSW} | docker login -u ${DOCKER_CRE_USR} --password-stdin ${DOCKER_URL}
+            echo '${DOCKER_CRE_PSW}' | docker login -u ${DOCKER_CRE_USR} --password-stdin ${DOCKER_URL}
 
             if [ ! -f "Dockerfile" ]; then
               cp ../Dockerfile .
