@@ -75,7 +75,7 @@ pipeline {
           def n = 30
           def allTags = []
           def LATEST_TAG = ''
-          def env.jsonFile = 'tags.json'
+          env.jsonFile = 'tags.json'
           sh '''
             curl -s --connect-timeout 60 -u "${DOCKER_CRE_USR}:${DOCKER_CRE_PSW}" \
             -X GET --header "Accept: application/json" \
