@@ -205,8 +205,7 @@ pipeline {
             docker push ${DOCKER_URL}/${REPO_PATH}:${NEW_TAG}
           '''
         }
-        jf "rt docker-push ${DOCKER_URL}/${REPO_PATH}:${NEW_TAG} --build-name=${BUILD_NAME} --build-number=${BUILD_NUMBER}"
-        jf "rt build-publish ${BUILD_NAME} ${BUILD_NUMBER}"
+        jf "rt build-publish ${JOB_NAME} ${BUILD_NUMBER}"
       }
     }
 
