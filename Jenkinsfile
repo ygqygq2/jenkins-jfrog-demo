@@ -220,10 +220,10 @@ pipeline {
       }
       steps {
         echo '################### Deploy ###################'
-        if (env.DEPLOY_TYPE == 'file') {
-          jf "rt download ${REPO_PATH}/${PACKAGE_NAME}"
-        }
         script {
+          if (env.DEPLOY_TYPE == 'file') {
+            jf "rt download ${REPO_PATH}/${PACKAGE_NAME}"
+          }
           serverList.each { ip, sshuser ->
             echo "#### 部署到 $ip ####"
             def remote = [:]
