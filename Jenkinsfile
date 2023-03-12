@@ -152,7 +152,7 @@ pipeline {
       agent {
         docker {
           image 'maven:3.9.0-eclipse-temurin-11'
-          args "-v /caches/maven:/root/.m2 -u root:root"
+          args "-v /caches/maven:/var/maven/.m2 -u 1000"
         }
       }
       tools {
@@ -189,6 +189,10 @@ pipeline {
         dir("code") {
           sh '''#!/bin/sh -e
             echo ${DOCKER_CRE_PSW} | docker login -u ${DOCKER_CRE_USR} --password-stdin ${DOCKER_URL}
+
+            if [ ! -f "Dockerfile" ]; then
+              cp ../Dockerfile .
+            fi
             docker build -t ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG} .
             docker push ${DOCKER_URL}/${DOCKER_REP}/${APP_NAME}:${NEW_TAG}
           '''

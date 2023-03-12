@@ -6,7 +6,7 @@ services:
   jenkins:
     image: jenkinsci/blueocean:1.25.7
     restart: always
-    user: root
+    # user: root
     networks:
       - app
     environment:

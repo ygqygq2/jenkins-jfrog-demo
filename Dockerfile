@@ -1,18 +1,17 @@
-FROM maven:3.9.0-eclipse-temurin-8-alpine AS builder
+FROM maven:3.9.0-eclipse-temurin-11 AS builder
 
 WORKDIR /usr/src/mymaven
 
 COPY . .
-COPY conf/settings.xml /usr/share/maven/conf/settings.xml
+COPY conf/settings.xml /usr/share/maven/conf/settings-docker.xml
 
-# RUN mvn -B install --file pom.xml
+RUN mvn -B install -f pom.xml -s /usr/share/maven/conf/settings-docker.xml
 
-# FROM openjdk:8-jdk-alpine
+FROM eclipse-temurin:11
 
-# LABEL maintainer "ygqygq2@qq.com"
+LABEL maintainer "ygqygq2@qq.com"
 
-# ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$JAVA_HOME/lib:/data/lib
 # 注意生成的 jar 包名
-# COPY --from=builder /usr/src/mymaven/target/my-app*.jar /app.jar
-# 
-# CMD ["java", "-Duser.timezone=GMT+08", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app.jar"]
+COPY --from=builder /usr/src/mymaven/target/my-app*.jar /app.jar
+
+CMD ["java", "-Duser.timezone=GMT+08", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app.jar"]
